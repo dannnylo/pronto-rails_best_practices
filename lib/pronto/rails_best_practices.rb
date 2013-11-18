@@ -3,10 +3,8 @@ require 'rails_best_practices'
 
 module Pronto
   class RailsBestPractices < Runner
-    def run(patches, _)
+    def run
       return [] unless patches
-
-      patches_with_additions = patches.select { |patch| patch.additions > 0 }
 
       files = patches_with_additions.map do |patch|
         Regexp.new(patch.new_file_full_path.to_s)
@@ -16,15 +14,15 @@ module Pronto
         analyzer = ::RailsBestPractices::Analyzer.new('.', { 'silent' => true,
                                                              'only' => files })
         analyzer.analyze
-        messages_for(patches_with_additions, analyzer.errors).compact
+        messages_for(analyzer.errors).compact
       else
         []
       end
     end
 
-    def messages_for(patches, errors)
+    def messages_for(errors)
       errors.map do |error|
-        patch = patch_for_error(patches, error)
+        patch = patch_for_error(error)
 
         if patch
           line = patch.added_lines.find do |added_line|
@@ -41,8 +39,8 @@ module Pronto
                   error.message.capitalize)
     end
 
-    def patch_for_error(patches, error)
-      patches.find do |patch|
+    def patch_for_error(error)
+      patches_with_additions.find do |patch|
         patch.new_file_full_path.to_s == error.filename
       end
     end
